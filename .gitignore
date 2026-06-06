@@ -1,0 +1,10 @@
+build/
+cd/out/
+model/*.bin
+model/*.json
+assets/bios/
+target/
+*.o
+*.elf
+*.dylib
+.DS_Store
