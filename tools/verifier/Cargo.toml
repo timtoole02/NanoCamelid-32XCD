@@ -1,0 +1,11 @@
+[package]
+name = "nc-verifier"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nc-model = { path = "../nc-model" }
+
+[[bin]]
+name = "nc-verifier"
+path = "src/main.rs"

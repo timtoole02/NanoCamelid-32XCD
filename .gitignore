@@ -8,3 +8,4 @@ target/
 *.elf
 *.dylib
 .DS_Store
+model/*.ncm

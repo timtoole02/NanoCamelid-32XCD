@@ -1,0 +1,11 @@
+[package]
+name = "nc-packer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nc-model = { path = "../nc-model" }
+
+[[bin]]
+name = "nc-packer"
+path = "src/main.rs"

@@ -1,0 +1,11 @@
+[package]
+name = "nc-reference"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nc-model = { path = "../../tools/nc-model" }
+
+[[bin]]
+name = "nc-reference"
+path = "src/main.rs"

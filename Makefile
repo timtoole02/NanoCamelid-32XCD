@@ -22,7 +22,7 @@ all: check-env tools console model cdimage
 # --- host tools (Rust workspace) -------------------------------------------
 tools:
 	@echo "== host tools =="
-	@if [ -f tools/Cargo.toml ]; then cargo build --release --manifest-path tools/Cargo.toml; \
+	@if [ -f Cargo.toml ]; then cargo build --release --manifest-path Cargo.toml; \
 	else echo "  (no tools workspace yet — Milestone 4+)"; fi
 
 # --- console binaries -------------------------------------------------------

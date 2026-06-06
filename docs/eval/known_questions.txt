@@ -1,0 +1,121 @@
+Why do llamas hum?
+What is a llama?
+What is a camelid?
+What is an alpaca?
+What is a vicuna?
+What is a guanaco?
+What do llamas eat?
+Where do llamas live?
+Why do llamas spit?
+What do llamas carry?
+When do llamas sleep?
+What do llamas drink?
+Are llamas cold?
+What is a cria?
+Are llamas fast?
+Are llamas tall?
+What is your name?
+Who are you?
+Are you real?
+Are you smart?
+What are you?
+How do you work?
+How big is your brain?
+What is the herd?
+Do llamas love?
+Are llamas happy?
+What makes llamas angry?
+Who are your friends?
+What is wool?
+How old can a llama get?
+Do llamas guard sheep?
+What is the genesis?
+What is the mega drive?
+What is the thirty two x?
+What is the sega cd?
+What is the sh two?
+What is the master chip?
+What is the slave chip?
+What is the sub cpu?
+What is the main cpu?
+What does the z eighty do?
+What is a shard?
+What is streaming?
+What is double buffering?
+What is the mailbox?
+What is a heartbeat?
+What are comm registers?
+What is word ram?
+What is sdram?
+What is the rom?
+What is the disc?
+What are tokens?
+What is a token id?
+What is the vocabulary?
+What is inference?
+What is a candidate?
+What is the candidate table?
+What is a trigram?
+What is a bigram?
+What is backoff?
+What is the reranker?
+What are embeddings?
+What is a dot product?
+What is quantization?
+What is int eight?
+What is greedy decoding?
+What is a repetition penalty?
+What is training?
+Do you train on the console?
+What is the verifier?
+What are receipts?
+What is parity?
+What is the reference?
+Who built this?
+What is nanocamelid?
+What was nanocamelid nes?
+Why sega hardware?
+Why is this hard?
+Is this a large language model?
+Is this gpt?
+Are you online?
+Do you need the internet?
+Can you write code?
+What can you do?
+What can i ask?
+How fast are you?
+What is a frame?
+What is vblank?
+What does the screen show?
+Hello?
+Hi?
+Hey?
+Good morning?
+Thank you?
+Goodbye?
+What?
+Huh?
+Wow?
+Can llamas dance?
+How does the model work?
+How does a chip pick words?
+What makes the model answer?
+What is inside the disc?
+Where do answers come from?
+Where does the model live?
+Are you alive?
+Do you think?
+Are you happy here?
+Why two chips?
+How do the chips talk?
+What if the disc is slow?
+What is a cache miss?
+What is the boot proof?
+What is the work split?
+What happens each word?
+What is context?
+What is the answer length?
+Is this useful?
+Is this fake?
+Is there a server?
+Does a modern machine answer?

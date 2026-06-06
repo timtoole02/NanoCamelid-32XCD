@@ -34,11 +34,11 @@ See [docs/claims.md](docs/claims.md) for the full honest-claims statement
 | Milestone | Description | Status |
 |---|---|---|
 | 0 | Repository scaffold | ✅ done |
-| 1 | 32X + Sega CD boot proof, per-processor heartbeats | ⏳ in progress |
-| 2 | Processor mailbox proof | — |
-| 3 | CD model streaming proof | — |
-| 4 | Host-side trainer | — |
-| 5 | Rust reference inference | — |
+| 1 | 32X boot proof, per-processor heartbeats + title screen | ✅ done (cart scope; CD half blocked on user-supplied BIOS) |
+| 2 | Processor mailbox proof | ✅ done (68K→SH2M→SH2S→reduce→render, host-verified results) |
+| 3 | CD model streaming proof | 🚧 blocked: needs Sega CD BIOS in `assets/bios/` |
+| 4 | Host-side trainer | ✅ done (deterministic SGD reranker, int8 quantization, packed shards) |
+| 5 | Rust reference inference | ✅ done (integer-exact, loads packed bins, 121 eval prompts) |
 | 6 | SH-2 scoring kernel | — |
 | 7 | First real generated token (parity vs reference) | — |
 | 8 | 32-token generation, full parity | — |
