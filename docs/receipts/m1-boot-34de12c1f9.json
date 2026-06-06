@@ -1,0 +1,61 @@
+{
+  "milestone": 1,
+  "title": "32X boot proof with per-processor heartbeats (cart mode)",
+  "timestamp_utc": "2026-06-06T23:23:44.566633+00:00",
+  "project_rev": "34de12c1f9c6d5717a62409eb67c0d7b05eed98a",
+  "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
+  "rom_sha256": "de179357b8d1e1edb0498a7668a4f9160d7278c1170e44fe3ae5a5c681f2b45e",
+  "frames": 120,
+  "checks": {
+    "main68k_alive": true,
+    "sh2m_alive_sdram": true,
+    "sh2s_alive_sdram": true,
+    "sh2m_alive_comm": true,
+    "sh2s_alive_comm": true,
+    "mailbox_handshake": true,
+    "no_unexpected_exceptions": true
+  },
+  "pass": true,
+  "processors": {
+    "MAIN68K": "alive (work-RAM heartbeat)",
+    "SH2_MASTER": "alive (COMM6 + SDRAM heartbeat)",
+    "SH2_SLAVE": "alive (COMM7 + SDRAM heartbeat)",
+    "SUB68K": "BLOCKED: Sega CD BIOS not available (user-supplied); CD boot path untested",
+    "Z80": "not exercised (out of scope for M1)"
+  },
+  "samples_first_last": {
+    "main68k_hb": [
+      0,
+      157565
+    ],
+    "mailbox_ok": [
+      0,
+      1
+    ],
+    "exceptions": [
+      0,
+      0
+    ],
+    "sh2m_comm": [
+      0,
+      22986
+    ],
+    "sh2s_comm": [
+      0,
+      22980
+    ],
+    "sh2m_sdram": [
+      0,
+      5134794
+    ],
+    "sh2s_sdram": [
+      0,
+      5134788
+    ]
+  },
+  "honesty_notes": [
+    "Cart-mode only: the Sega CD half of Milestone 1 is pending BIOS availability.",
+    "Emulator-only: PicoDrive HLE boot; real-hardware 32X security startup not implemented.",
+    "Title screen rendering not yet implemented (heartbeats are verifier-captured)."
+  ]
+}

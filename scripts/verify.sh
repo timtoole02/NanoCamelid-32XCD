@@ -1,0 +1,10 @@
+#!/bin/bash
+# make verify — run all milestone verifiers that are currently implemented.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# ensure harness + ROM are built
+make -s -C "$ROOT/tools/emulator"
+make -s -C "$ROOT/src"
+
+python3 "$ROOT/scripts/verify_m1.py"
