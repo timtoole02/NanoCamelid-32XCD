@@ -1,0 +1,47 @@
+diff --git a/platform/libretro/libretro.c b/platform/libretro/libretro.c
+index 7b6edc2..e1e517b 100644
+--- a/platform/libretro/libretro.c
++++ b/platform/libretro/libretro.c
+@@ -1700,6 +1700,23 @@ void *retro_get_memory_data(unsigned type)
+       case 4:
+          data = PicoMem.cram;
+          break;
++      /* NanoCamelid 32XCD local patch: expose 32X/MCD memories for the
++       * headless verification harness (custom types, not libretro API). */
++      case 16: /* 32X SDRAM, 256K */
++         data = ((PicoIn.AHW & PAHW_32X) && Pico32xMem) ? Pico32xMem->sdram : NULL;
++         break;
++      case 17: /* 32X framebuffer DRAM, 2x128K */
++         data = ((PicoIn.AHW & PAHW_32X) && Pico32xMem) ? Pico32xMem->dram : NULL;
++         break;
++      case 18: /* MCD PRG RAM, 512K */
++         data = (PicoIn.AHW & PAHW_MCD) ? Pico_mcd->prg_ram : NULL;
++         break;
++      case 19: /* MCD Word RAM (2M view), 256K */
++         data = (PicoIn.AHW & PAHW_MCD) ? Pico_mcd->word_ram2M : NULL;
++         break;
++      case 20: /* 32X system regs incl. COMM0-7 (u16[0x20]) */
++         data = (PicoIn.AHW & PAHW_32X) ? Pico32x.regs : NULL;
++         break;
+       default:
+          data = NULL;
+          break;
+@@ -1740,6 +1757,18 @@ size_t retro_get_memory_size(unsigned type)
+          else
+             return sizeof(PicoMem.ram);
+ 
++      /* NanoCamelid 32XCD local patch (see retro_get_memory_data) */
++      case 16:
++         return ((PicoIn.AHW & PAHW_32X) && Pico32xMem) ? sizeof(Pico32xMem->sdram) : 0;
++      case 17:
++         return ((PicoIn.AHW & PAHW_32X) && Pico32xMem) ? sizeof(Pico32xMem->dram) : 0;
++      case 18:
++         return (PicoIn.AHW & PAHW_MCD) ? sizeof(Pico_mcd->prg_ram) : 0;
++      case 19:
++         return (PicoIn.AHW & PAHW_MCD) ? sizeof(Pico_mcd->word_ram2M) : 0;
++      case 20:
++         return (PicoIn.AHW & PAHW_32X) ? sizeof(Pico32x.regs) : 0;
++
+       default:
+          return 0;
+    }
