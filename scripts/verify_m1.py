@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CORE = os.environ.get("PICODRIVE_CORE",
                       "/Volumes/Untitled/emu/picodrive/picodrive_libretro.dylib")
-ROM = os.path.join(ROOT, "build", "nanocamelid32x_m1.32x")
+ROM = os.path.join(ROOT, "build", "nanocamelid32x.32x")
 HARNESS = os.path.join(ROOT, "build", "nc-headless")
 FRAMES = 120
 

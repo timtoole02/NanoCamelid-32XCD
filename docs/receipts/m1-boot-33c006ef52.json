@@ -1,10 +1,10 @@
 {
   "milestone": 1,
   "title": "32X boot proof with per-processor heartbeats (cart mode)",
-  "timestamp_utc": "2026-06-06T23:35:33.610745+00:00",
-  "project_rev": "d3a146f355193d5662d425d220196422d4df8e2d",
+  "timestamp_utc": "2026-06-06T23:41:07.085597+00:00",
+  "project_rev": "33c006ef521299f0e02455edef2a7eb0f6165374",
   "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
-  "rom_sha256": "9ebd1421df92470da0e8fec9880d806e1121ed15321fcfeaba807d0a8cdd87ae",
+  "rom_sha256": "4907b39c64a50ec44327d79be797bba8a96fecd57334ea93ffefc13c846a7f3c",
   "frames": 120,
   "checks": {
     "main68k_alive": true,
@@ -40,19 +40,19 @@
     ],
     "sh2m_comm": [
       0,
-      36808
+      20881
     ],
     "sh2s_comm": [
       0,
-      36802
+      20449
     ],
     "sh2m_sdram": [
       0,
-      5148616
+      2773393
     ],
     "sh2s_sdram": [
       0,
-      5148610
+      2314209
     ]
   },
   "honesty_notes": [

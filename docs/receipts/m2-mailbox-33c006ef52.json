@@ -1,0 +1,41 @@
+{
+  "milestone": 2,
+  "title": "Processor mailbox proof: 68K -> SH2M -> SH2S -> reduced result -> 68K",
+  "timestamp_utc": "2026-06-06T23:41:07.290845+00:00",
+  "project_rev": "33c006ef521299f0e02455edef2a7eb0f6165374",
+  "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
+  "rom_sha256": "4907b39c64a50ec44327d79be797bba8a96fecd57334ea93ffefc13c846a7f3c",
+  "seeds": [
+    "0x1234",
+    "0xbeef",
+    "0x42"
+  ],
+  "expected": [
+    "0x41623be0",
+    "0x837d6bc0",
+    "0xbfe12a0"
+  ],
+  "got": [
+    "0x41623be0",
+    "0x837d6bc0",
+    "0xbfe12a0"
+  ],
+  "checks": {
+    "all_roundtrips_completed": true,
+    "no_timeout": true,
+    "results_match_host": true,
+    "master_jobs_3": true,
+    "slave_jobs_3": true
+  },
+  "pass": true,
+  "processor_roles": {
+    "MAIN68K": "command issue (COMM0/1), result render, ACK-by-clear protocol",
+    "SH2_MASTER": "low-half compute + reduce + reply (3 jobs)",
+    "SH2_SLAVE": "high-half compute (3 jobs)",
+    "SUB68K": "BLOCKED: Sega CD BIOS not available; CD block-load deferred to M3"
+  },
+  "honesty_notes": [
+    "Work function is a synthetic deterministic table-sum, not model inference (that is M6+).",
+    "Emulator-only."
+  ]
+}

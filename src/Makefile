@@ -4,7 +4,7 @@ M68K_PREFIX ?= m68k-elf-
 
 BUILD := ../build
 
-ROM := $(BUILD)/nanocamelid32x_m1.32x
+ROM := $(BUILD)/nanocamelid32x.32x
 
 all: $(ROM)
 
@@ -25,17 +25,23 @@ $(BUILD)/font.bin: ../scripts/mkfont.py
 	@mkdir -p $(BUILD)
 	python3 ../scripts/mkfont.py $@
 
-$(BUILD)/sh2_master.bin: sh2_master/heartbeat.s
-	@mkdir -p $(BUILD)
-	$(SH_PREFIX)as --isa=sh2 --big $< -o $(BUILD)/sh2_master.o
-	$(SH_PREFIX)ld -Ttext=0x22000800 -e _start $(BUILD)/sh2_master.o -o $(BUILD)/sh2_master.elf
-	$(SH_PREFIX)objcopy -O binary --only-section=.text $(BUILD)/sh2_master.elf $@
+SH2_CFLAGS := -m2 -mb -O2 -fomit-frame-pointer -ffreestanding -fno-builtin -Wall -Wextra
 
-$(BUILD)/sh2_slave.bin: sh2_slave/heartbeat.s
+$(BUILD)/sh2_master.bin: sh2_master/crt0.s sh2_master/main.c sh2_master/link.ld shared/mailbox.h
 	@mkdir -p $(BUILD)
-	$(SH_PREFIX)as --isa=sh2 --big $< -o $(BUILD)/sh2_slave.o
-	$(SH_PREFIX)ld -Ttext=0x22001000 -e _start $(BUILD)/sh2_slave.o -o $(BUILD)/sh2_slave.elf
-	$(SH_PREFIX)objcopy -O binary --only-section=.text $(BUILD)/sh2_slave.elf $@
+	$(SH_PREFIX)as --isa=sh2 --big sh2_master/crt0.s -o $(BUILD)/sh2_master_crt0.o
+	$(SH_PREFIX)gcc $(SH2_CFLAGS) -c sh2_master/main.c -o $(BUILD)/sh2_master_main.o
+	$(SH_PREFIX)ld -T sh2_master/link.ld -e _start \
+	    $(BUILD)/sh2_master_crt0.o $(BUILD)/sh2_master_main.o -o $(BUILD)/sh2_master.elf
+	$(SH_PREFIX)objcopy -O binary $(BUILD)/sh2_master.elf $@
+
+$(BUILD)/sh2_slave.bin: sh2_slave/crt0.s sh2_slave/main.c sh2_slave/link.ld shared/mailbox.h
+	@mkdir -p $(BUILD)
+	$(SH_PREFIX)as --isa=sh2 --big sh2_slave/crt0.s -o $(BUILD)/sh2_slave_crt0.o
+	$(SH_PREFIX)gcc $(SH2_CFLAGS) -c sh2_slave/main.c -o $(BUILD)/sh2_slave_main.o
+	$(SH_PREFIX)ld -T sh2_slave/link.ld -e _start \
+	    $(BUILD)/sh2_slave_crt0.o $(BUILD)/sh2_slave_main.o -o $(BUILD)/sh2_slave.elf
+	$(SH_PREFIX)objcopy -O binary $(BUILD)/sh2_slave.elf $@
 
 $(ROM): $(BUILD)/genesis68k_boot.bin $(BUILD)/sh2_master.bin $(BUILD)/sh2_slave.bin \
         $(BUILD)/genesis68k_main.bin $(BUILD)/font.bin ../scripts/mkrom.py

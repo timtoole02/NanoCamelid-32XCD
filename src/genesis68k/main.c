@@ -11,8 +11,13 @@
  *   0xFF6008 u16 SH2M COMM6 snapshot     0xFF600A u16 SH2S COMM7 snapshot
  *   0xFF6020 u16 mailbox-ok flag (set by boot.s)
  *   0xFF6030 u32 unexpected-exception counter
+ *   0xFF6040 u32[3] M2 mailbox round-trip results
+ *   0xFF6050 u16 M2 completed count   0xFF6052 u16 M2 timeout-error seq
  */
 #include <stdint.h>
+
+#define NC32X_CPU_M68K 1
+#include "../shared/mailbox.h"
 
 #define REG16(a)   (*(volatile uint16_t *)(a))
 #define REG32(a)   (*(volatile uint32_t *)(a))
@@ -22,6 +27,10 @@
 
 #define COMM6      0xA1512C
 #define COMM7      0xA1512E
+
+#define M2_RES     0xFF6040
+#define M2_CNT     0xFF6050
+#define M2_ERR     0xFF6052
 
 #define HB68K      0xFF6000
 #define SH2M_SNAP  0xFF6008
@@ -71,6 +80,20 @@ static void wait_vblank(void)
     while (!(REG16(VDP_CTRL) & 0x0008)) {} /* then wait for the next one */
 }
 
+/* M2: send one mailbox command to the SH-2 pair and wait for the reduced
+ * result. Bounded wait — a timeout latches the seq into M2_ERR. */
+static uint32_t m2_cmd(uint16_t seed, uint16_t seq)
+{
+    COMM(1) = seed;
+    COMM(0) = CMD(OP_WORK, seq);
+    for (uint32_t t = 0; t < 2000000; t++) {
+        if (COMM(0) == 0)
+            return ((uint32_t)COMM(2) << 16) | COMM(3);
+    }
+    REG16(M2_ERR) = seq;
+    return 0xDEADDEADu;
+}
+
 __attribute__((section(".text.entry"), noreturn)) void cmain(void)
 {
     (void)REG16(VDP_CTRL); /* reset control-port latch */
@@ -115,6 +138,16 @@ __attribute__((section(".text.entry"), noreturn)) void cmain(void)
     text(10, 4, "SH2S");
     text(11, 4, "SUB68K  BLOCKED: NO CD BIOS");
     text(12, 4, "MAILBOX OK");
+
+    /* M2: three deterministic mailbox round-trips through both SH-2s */
+    static const uint16_t seeds[3] = { 0x1234, 0xBEEF, 0x0042 };
+    text(14, 4, "M2 MBOX");
+    for (uint16_t i = 0; i < 3; i++) {
+        uint32_t r = m2_cmd(seeds[i], i + 1);
+        REG32(M2_RES + 4 * i) = r;
+        REG16(M2_CNT) = i + 1;
+        hex(14, 13 + i * 9, r, 8);  /* cols 13/22/31, last ends at 39 (H40) */
+    }
 
     for (;;) {
         wait_vblank();

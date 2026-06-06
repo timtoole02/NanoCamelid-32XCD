@@ -8,3 +8,4 @@ make -s -C "$ROOT/tools/emulator"
 make -s -C "$ROOT/src"
 
 python3 "$ROOT/scripts/verify_m1.py"
+python3 "$ROOT/scripts/verify_m2.py"
