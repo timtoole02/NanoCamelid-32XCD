@@ -11,31 +11,41 @@ Layout (matches PicoDrive's 32X HLE boot contract, see docs/hardware-notes.md):
      0x3EC u32  slave VBR
   0x800        master SH-2 binary (runs from uncached ROM, 0x22000800)
   0x1000       slave SH-2 binary  (0x22001000)
+  0x1800       Main 68K C runtime (boot.s jumps here after handshake)
+  0x8000       font tiles (Genesis 4bpp, tile = ASCII-32)
 
-Usage: mkrom.py SHELL.BIN MASTER.BIN SLAVE.BIN OUT.32x
+Usage: mkrom.py SHELL.BIN MASTER.BIN SLAVE.BIN MAIN68K.BIN FONT.BIN OUT.32x
 """
 import struct
 import sys
 
 MASTER_OFF = 0x800
 SLAVE_OFF = 0x1000
+MAIN_OFF = 0x1800
+FONT_OFF = 0x8000
 ROM_SIZE = 0x10000  # pad to 64K (the post-ADEN 68K ROM bank size)
 
 
 def main():
-    shell_p, master_p, slave_p, out_p = sys.argv[1:5]
+    shell_p, master_p, slave_p, main_p, font_p, out_p = sys.argv[1:7]
     shell = open(shell_p, "rb").read()
     master = open(master_p, "rb").read()
     slave = open(slave_p, "rb").read()
+    main68k = open(main_p, "rb").read()
+    font = open(font_p, "rb").read()
 
     assert len(shell) <= MASTER_OFF, f"68K shell too big: {len(shell):#x}"
     assert len(master) <= SLAVE_OFF - MASTER_OFF, f"master SH-2 too big: {len(master):#x}"
-    assert len(slave) <= ROM_SIZE - SLAVE_OFF, f"slave SH-2 too big: {len(slave):#x}"
+    assert len(slave) <= MAIN_OFF - SLAVE_OFF, f"slave SH-2 too big: {len(slave):#x}"
+    assert len(main68k) <= FONT_OFF - MAIN_OFF, f"68K main too big: {len(main68k):#x}"
+    assert len(font) <= ROM_SIZE - FONT_OFF, f"font too big: {len(font):#x}"
 
     rom = bytearray(ROM_SIZE)
     rom[: len(shell)] = shell
     rom[MASTER_OFF : MASTER_OFF + len(master)] = master
     rom[SLAVE_OFF : SLAVE_OFF + len(slave)] = slave
+    rom[MAIN_OFF : MAIN_OFF + len(main68k)] = main68k
+    rom[FONT_OFF : FONT_OFF + len(font)] = font
 
     def patch32(off, val):
         rom[off : off + 4] = struct.pack(">I", val)

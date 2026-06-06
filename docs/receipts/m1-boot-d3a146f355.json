@@ -1,10 +1,10 @@
 {
   "milestone": 1,
   "title": "32X boot proof with per-processor heartbeats (cart mode)",
-  "timestamp_utc": "2026-06-06T23:23:44.566633+00:00",
-  "project_rev": "34de12c1f9c6d5717a62409eb67c0d7b05eed98a",
+  "timestamp_utc": "2026-06-06T23:35:33.610745+00:00",
+  "project_rev": "d3a146f355193d5662d425d220196422d4df8e2d",
   "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
-  "rom_sha256": "de179357b8d1e1edb0498a7668a4f9160d7278c1170e44fe3ae5a5c681f2b45e",
+  "rom_sha256": "9ebd1421df92470da0e8fec9880d806e1121ed15321fcfeaba807d0a8cdd87ae",
   "frames": 120,
   "checks": {
     "main68k_alive": true,
@@ -13,7 +13,9 @@
     "sh2m_alive_comm": true,
     "sh2s_alive_comm": true,
     "mailbox_handshake": true,
-    "no_unexpected_exceptions": true
+    "no_unexpected_exceptions": true,
+    "title_rendered": true,
+    "overlay_rendered": true
   },
   "pass": true,
   "processors": {
@@ -26,7 +28,7 @@
   "samples_first_last": {
     "main68k_hb": [
       0,
-      157565
+      104
     ],
     "mailbox_ok": [
       0,
@@ -38,24 +40,23 @@
     ],
     "sh2m_comm": [
       0,
-      22986
+      36808
     ],
     "sh2s_comm": [
       0,
-      22980
+      36802
     ],
     "sh2m_sdram": [
       0,
-      5134794
+      5148616
     ],
     "sh2s_sdram": [
       0,
-      5134788
+      5148610
     ]
   },
   "honesty_notes": [
     "Cart-mode only: the Sega CD half of Milestone 1 is pending BIOS availability.",
-    "Emulator-only: PicoDrive HLE boot; real-hardware 32X security startup not implemented.",
-    "Title screen rendering not yet implemented (heartbeats are verifier-captured)."
+    "Emulator-only: PicoDrive HLE boot; real-hardware 32X security startup not implemented."
   ]
 }

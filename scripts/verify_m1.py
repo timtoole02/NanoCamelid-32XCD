@@ -51,7 +51,10 @@ def main():
             print(f"VERIFY FAIL: missing {what}: {p}")
             return 1
 
-    cmd = [HARNESS, "--core", CORE, "--rom", ROM, "--frames", str(FRAMES), "--quiet"]
+    nt_path = os.path.join(ROOT, "build", "m1_nametable.bin")
+    shot_path = os.path.join(ROOT, "build", "m1_title.ppm")
+    cmd = [HARNESS, "--core", CORE, "--rom", ROM, "--frames", str(FRAMES), "--quiet",
+           "--dump", f"vram:0xC000:0x1000:{nt_path}", "--screenshot", shot_path]
     for name, spec in SAMPLES:
         cmd += ["--sample", f"{name}:{spec}"]
     out = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -78,6 +81,20 @@ def main():
     checks["sh2s_alive_comm"] = changing_with_wrap(s["sh2s_comm"])
     checks["mailbox_handshake"] = s["mailbox_ok"][-1] == 1
     checks["no_unexpected_exceptions"] = all(v == 0 for v in s["exceptions"])
+
+    # title render: decode plane-A nametable rows (tile index = ASCII-32)
+    nt = open(nt_path, "rb").read()
+
+    def nt_row(r):
+        cells = [int.from_bytes(nt[(r * 64 + c) * 2:(r * 64 + c) * 2 + 2], "big")
+                 for c in range(40)]
+        return "".join(chr((t & 0x7FF) + 32) for t in cells).strip()
+
+    checks["title_rendered"] = nt_row(2) == "NANOCAMELID 32XCD"
+    checks["overlay_rendered"] = (nt_row(8).startswith("MAIN68K")
+                                  and nt_row(9).startswith("SH2M")
+                                  and nt_row(10).startswith("SH2S")
+                                  and nt_row(12) == "MAILBOX OK")
     ok = all(checks.values())
 
     git_rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
@@ -104,7 +121,6 @@ def main():
         "honesty_notes": [
             "Cart-mode only: the Sega CD half of Milestone 1 is pending BIOS availability.",
             "Emulator-only: PicoDrive HLE boot; real-hardware 32X security startup not implemented.",
-            "Title screen rendering not yet implemented (heartbeats are verifier-captured).",
         ],
     }
     out_path = os.path.join(ROOT, "docs", "receipts",

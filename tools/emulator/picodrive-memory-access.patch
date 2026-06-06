@@ -1,5 +1,5 @@
 diff --git a/platform/libretro/libretro.c b/platform/libretro/libretro.c
-index 7b6edc2..e1e517b 100644
+index 7b6edc2..1889a08 100644
 --- a/platform/libretro/libretro.c
 +++ b/platform/libretro/libretro.c
 @@ -1700,6 +1700,23 @@ void *retro_get_memory_data(unsigned type)
@@ -26,11 +26,13 @@ index 7b6edc2..e1e517b 100644
        default:
           data = NULL;
           break;
-@@ -1740,6 +1757,18 @@ size_t retro_get_memory_size(unsigned type)
+@@ -1740,6 +1757,20 @@ size_t retro_get_memory_size(unsigned type)
           else
              return sizeof(PicoMem.ram);
  
 +      /* NanoCamelid 32XCD local patch (see retro_get_memory_data) */
++      case RETRO_MEMORY_VIDEO_RAM:
++         return sizeof(PicoMem.vram);
 +      case 16:
 +         return ((PicoIn.AHW & PAHW_32X) && Pico32xMem) ? sizeof(Pico32xMem->sdram) : 0;
 +      case 17:

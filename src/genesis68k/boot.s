@@ -68,15 +68,9 @@ entry:
     cmp.l   0xA15124, %d1
     bne.s   4b
 
-    | mark mailbox ok
+    | mark mailbox ok and hand off to the C runtime (ROM 0x1800)
     move.w  #0x0001, 0xFF6020
-
-main_loop:
-    addq.l  #1, 0xFF6000        | MAIN68K heartbeat (u32)
-    | snapshot SH-2 heartbeats from COMM6/7 for the 68K-side view
-    move.w  0xA1512C, 0xFF6008  | SH2M comm heartbeat
-    move.w  0xA1512E, 0xFF600A  | SH2S comm heartbeat
-    bra.s   main_loop
+    jmp     0x1800
 
 trap:
     addq.l  #1, 0xFF6030        | unexpected exception counter
