@@ -34,6 +34,18 @@ typedef volatile uint32_t vu32;
 /* --- opcodes (COMM0/COMM4 high byte) --- */
 #define OP_NOP   0x00
 #define OP_WORK  0x10  /* M2: split table-sum over candidate indices */
+#define OP_TOKEN 0x11  /* 68K->SH2M: append prompt token (id in COMM1) */
+#define OP_GEN   0x12  /* 68K->SH2M: generate (qtype in COMM1) */
+#define OP_SCORE 0x20  /* SH2M->SH2S: score the high candidate slots */
+
+/* --- generation streaming (master -> 68K during OP_GEN) ---
+ * COMM2 = 0xA000|token  (one generated token)
+ *         0xB000|count  (generation done; count = tokens emitted)
+ * COMM3 = emit sequence number (1-based); 0xFFFF on done.
+ * 68K ACKs each token by writing the emit number back to COMM1; the
+ * master waits for the ACK before overwriting COMM2 (lossless stream). */
+#define MSG_TOKEN 0xA000
+#define MSG_DONE  0xB000
 
 #define CMD(op, seq)  ((uint16_t)(((op) << 8) | ((seq) & 0xFF)))
 #define CMD_OP(w)     ((uint16_t)(w) >> 8)
@@ -50,6 +62,28 @@ typedef volatile uint32_t vu32;
 #define SH_JOBS_SLAVE  0x14  /* u32 slave jobs completed (role counter) */
 #define SH_SLAVE_PART  0x20  /* u32 slave partial sum for current seq */
 #define SH_RESULT      0x28  /* u32 last combined result */
+#define SH_GEN_COUNT   0x30  /* u32 generated-token count (verifier) */
+#define SH_SCORE_JOBS_M 0x38 /* u32 candidate-slots scored by master */
+#define SH_SCORE_JOBS_S 0x3C /* u32 candidate-slots scored by slave */
+
+/* --- SDRAM mailbox extension block (0x19000, uncached): the per-step
+ * scoring workspace shared master -> slave. Master writes everything,
+ * bumps COMM4 seq; slave reads, scores slots [8, count), replies. --- */
+#define SCORE_BLOCK    (SDRAM_UNCACHED + 0x19000)
+#define SCB_CV         0x00  /* i32[16] context vector            */
+#define SCB_CANDS      0x40  /* 16 x (u16 tok, i8 ng, u8 pad)     */
+#define SCB_COUNT      0x80  /* u32 candidate count               */
+#define SCB_RECENT     0x84  /* u16[8] recent tokens (newest last) */
+#define SCB_RECENT_LEN 0x94  /* u32 */
+#define SCB_EMITTED    0x98  /* u32 emitted count (EOS gating)    */
+#define SCB_SLAVE_SLOT 0xA0  /* u32 slave best slot (abs index)   */
+#define SCB_SLAVE_SCORE 0xA4 /* i32 slave best score              */
+#define SCB(off) (*(vu32 *)(SCORE_BLOCK + (off)))
+#define SCB16(off) (*(vu16 *)(SCORE_BLOCK + (off)))
+
+/* generated tokens for the verifier (SDRAM mirror; the 68K work-RAM
+ * mirror at 0xFF6100 is the canonical receipt location) */
+#define SH_GEN_BUF     (SDRAM_UNCACHED + 0x18100) /* u16 count + u16 ids[] */
 
 /* --- M2 deterministic work function ---------------------------------
  * "table" entry (no rodata needed):  tab(i) = (i*0x9E37 + 0x4242) & 0xFFFF

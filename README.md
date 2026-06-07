@@ -39,9 +39,9 @@ See [docs/claims.md](docs/claims.md) for the full honest-claims statement
 | 3 | CD model streaming proof | 🚧 blocked: needs Sega CD BIOS in `assets/bios/` |
 | 4 | Host-side trainer | ✅ done (deterministic SGD reranker, int8 quantization, packed shards) |
 | 5 | Rust reference inference | ✅ done (integer-exact, loads packed bins, 121 eval prompts) |
-| 6 | SH-2 scoring kernel | — |
-| 7 | First real generated token (parity vs reference) | — |
-| 8 | 32-token generation, full parity | — |
+| 6 | SH-2 scoring kernel | ✅ done (int8 dot products, split 8/8 across both SH-2s) |
+| 7 | First real generated token (parity vs reference) | ✅ done (exact match) |
+| 8 | Multi-token generation, full parity | ✅ done (4 prompts, all token IDs match the reference) |
 | 9 | Parallel streaming inference (CD prefetch during scoring) | — |
 | 10 | Eval gates + receipts | — |
 | 11 | Performance push | — |

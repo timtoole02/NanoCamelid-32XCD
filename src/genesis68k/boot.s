@@ -68,9 +68,9 @@ entry:
     cmp.l   0xA15124, %d1
     bne.s   4b
 
-    | mark mailbox ok and hand off to the C runtime (ROM 0x1800)
+    | mark mailbox ok and hand off to the C runtime (ROM 0x3000)
     move.w  #0x0001, 0xFF6020
-    jmp     0x1800
+    jmp     0x3000
 
 trap:
     addq.l  #1, 0xFF6030        | unexpected exception counter

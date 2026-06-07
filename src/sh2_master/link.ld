@@ -2,7 +2,7 @@
  * No .data/.bss — state lives at fixed SDRAM addresses (mailbox.h). */
 MEMORY
 {
-    rom : ORIGIN = 0x22000800, LENGTH = 0x800
+    rom : ORIGIN = 0x22000800, LENGTH = 0x1800
 }
 SECTIONS
 {

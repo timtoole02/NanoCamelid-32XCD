@@ -1,0 +1,190 @@
+{
+  "milestone": "6+7+8",
+  "title": "SH-2 scoring kernel + multi-token generation, token parity vs reference",
+  "timestamp_utc": "2026-06-07T00:02:42.189184+00:00",
+  "project_rev": "d44fa75452de3882dc51438602b943cf16dbb566",
+  "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
+  "rom_sha256": "aab1c534691e7a5873203d736b2ce40a62c0c15beb9ef6739a9b87fb552303b8",
+  "model_manifest": {
+    "format_version": 1,
+    "vocab_len": 485,
+    "dim": 16,
+    "ctx": 4,
+    "k": 16,
+    "max_tokens": 32,
+    "sh_dot": 0,
+    "sh_b": 6,
+    "sh_ng": 4,
+    "rep_pen": 192,
+    "corpus_sha256": "ad2ce8bf2f421196ceb4ded46336e575b290e27c11838743ac17fa4a4408ddd7",
+    "quantization": "int8 per-table max-abs, power-of-2 shifts",
+    "files": {
+      "vocab.bin": {
+        "bytes": 2945,
+        "sha256": "d139ad57706ca17d02d54de8335f4dcac849b80317097305ce6af07fe3c9e62f"
+      },
+      "tokenizer.bin": {
+        "bytes": 24,
+        "sha256": "488992ccb52be800d82b5535bb6782eec273553a3ce5987a77229d5d74cfc814"
+      },
+      "candidates.bin": {
+        "bytes": 23260,
+        "sha256": "20de9ef7a48e917198dd95a49be5d857841ec7e3ccd84618369ae7383536b350"
+      },
+      "weights.bin": {
+        "bytes": 16205,
+        "sha256": "b03f25ad379f177410b95de5c0fedeae526775b950ff185165c992125ad5d009"
+      },
+      "decode.bin": {
+        "bytes": 13,
+        "sha256": "963934f1ae4cd6ac72ad38267e5b2e38d12b5c122999d93a3f85b992703bf479"
+      }
+    }
+  },
+  "reference_outputs_sha256": "88fb54135aa93607464ba306f09dba413ca4e7ecfed62ef8e7c2536104905362",
+  "prompts": [
+    {
+      "prompt": "why do llamas hum",
+      "reference_index": 0,
+      "console_ids": [
+        31,
+        268,
+        30,
+        38,
+        5
+      ],
+      "reference_ids": [
+        31,
+        268,
+        30,
+        38,
+        5
+      ],
+      "decoded": "humming calms every llama.",
+      "match": true
+    },
+    {
+      "prompt": "what is the sega cd",
+      "reference_index": 34,
+      "console_ids": [
+        4,
+        21,
+        168,
+        23,
+        143,
+        39,
+        17,
+        104,
+        63,
+        4,
+        12,
+        77,
+        5
+      ],
+      "reference_ids": [
+        4,
+        21,
+        168,
+        23,
+        143,
+        39,
+        17,
+        104,
+        63,
+        4,
+        12,
+        77,
+        5
+      ],
+      "decoded": "the disc drive that streams my model shards while the chips score.",
+      "match": true
+    },
+    {
+      "prompt": "how does the model work",
+      "reference_index": 99,
+      "console_ids": [
+        29,
+        68,
+        26,
+        4,
+        53,
+        5
+      ],
+      "reference_ids": [
+        29,
+        68,
+        26,
+        4,
+        53,
+        5
+      ],
+      "decoded": "candidates come from the tables.",
+      "match": true
+    },
+    {
+      "prompt": "hello",
+      "reference_index": 89,
+      "console_ids": [
+        94,
+        120,
+        8,
+        4,
+        21,
+        5,
+        4,
+        47,
+        11,
+        109,
+        5,
+        4,
+        21,
+        5
+      ],
+      "reference_ids": [
+        94,
+        120,
+        8,
+        4,
+        21,
+        5,
+        4,
+        47,
+        11,
+        109,
+        5,
+        4,
+        21,
+        5
+      ],
+      "decoded": "hello friend, the disc. the best word wins. the disc.",
+      "match": true
+    }
+  ],
+  "score_slot_counters": {
+    "master": 336,
+    "slave": 336
+  },
+  "checks": {
+    "no_timeout_error": true,
+    "slot0_parity": true,
+    "slot1_parity": true,
+    "slot2_parity": true,
+    "slot3_parity": true,
+    "nc_verifier_pass": true,
+    "master_scored": true,
+    "slave_scored": true,
+    "answer_rendered": true
+  },
+  "pass": true,
+  "processor_roles": {
+    "MAIN68K": "tokenize (vocab from ROM), mailbox protocol, render",
+    "SH2_MASTER": "candidate merge, context vector, low-slot scoring, reduce, decode loop",
+    "SH2_SLAVE": "high-slot scoring (counters prove participation)",
+    "SUB68K": "BLOCKED: Sega CD BIOS unavailable; model is cart-ROM-resident until M3/M9"
+  },
+  "honesty_notes": [
+    "Model data is read from cart ROM, not streamed from CD (that is M3/M9, blocked on BIOS).",
+    "Emulator-only.",
+    "Candidate scoring is split 8/8 across the SH-2s when K=16 candidates exist; steps with <=8 candidates run master-only."
+  ]
+}

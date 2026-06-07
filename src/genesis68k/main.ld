@@ -3,7 +3,7 @@
  * work-RAM addresses (memory-map.md). */
 MEMORY
 {
-    rom : ORIGIN = 0x1800, LENGTH = 0x6800
+    rom : ORIGIN = 0x3000, LENGTH = 0x5000
 }
 SECTIONS
 {

@@ -423,7 +423,7 @@ pub mod train {
 
     impl FloatModel {
         pub fn init(vocab_len: usize, rng: &mut Rng) -> Self {
-            let mut mk = |n: usize, rng: &mut Rng| -> Vec<[f32; DIM]> {
+            let mk = |n: usize, rng: &mut Rng| -> Vec<[f32; DIM]> {
                 (0..n)
                     .map(|_| {
                         let mut a = [0f32; DIM];
@@ -645,23 +645,30 @@ pub mod pack {
         w.0
     }
 
-    /// candidates.bin layout (all BE):
-    ///   u16 vocab_len, u16 tri_count, u16 uni_count
+    /// candidates.bin layout (all BE, every record 4-byte aligned — the
+    /// SH-2 faults on unaligned access):
+    ///   header (8B): u16 vocab_len, u16 tri_count, u16 uni_count, u16 pad
     ///   tri keys:    tri_count * u32
-    ///   tri index:   tri_count * (u16 offset, u8 len) into tri pool
-    ///   tri pool:    entries (u16 tok, u8 score), offsets in entries
-    ///   bi index:    vocab_len * (u16 offset, u8 len) into bi pool
-    ///   bi pool:     entries (u16 tok, u8 score)
-    ///   uni:         uni_count * (u16 tok, u8 score)
+    ///   tri index:   tri_count * (u16 offset, u8 len, u8 pad)
+    ///   tri pool:    entries (u16 tok, i8 score, u8 pad), offsets in entries
+    ///   bi index:    vocab_len * (u16 offset, u8 len, u8 pad)
+    ///   bi pool:     entries (u16 tok, i8 score, u8 pad)
+    ///   uni:         uni_count * (u16 tok, i8 score, u8 pad)
     /// Pools are truncated to TRI_TOP / BI_TOP at pack time.
     pub fn candidates_bin(vocab_len: usize, t: &NgramTables) -> Vec<u8> {
         let mut w = W(Vec::new());
         w.u16(vocab_len as u16);
         w.u16(t.tri.len() as u16);
         w.u16(t.uni.len() as u16);
+        w.u16(0);
         for (k, _) in &t.tri {
             w.u32(*k);
         }
+        let entry = |w: &mut W, tok: u16, sc: i8| {
+            w.u16(tok);
+            w.i8(sc);
+            w.u8(0);
+        };
         let mut pool: Vec<(u16, i8)> = Vec::new();
         for (_, v) in &t.tri {
             let off = pool.len();
@@ -671,10 +678,10 @@ pub mod pack {
             }
             w.u16(off as u16);
             w.u8(take as u8);
+            w.u8(0);
         }
         for (tok, sc) in &pool {
-            w.u16(*tok);
-            w.i8(*sc);
+            entry(&mut w, *tok, *sc);
         }
         let mut bpool: Vec<(u16, i8)> = Vec::new();
         let mut bidx: Vec<(u16, u8)> = Vec::new();
@@ -689,21 +696,21 @@ pub mod pack {
         for (off, len) in &bidx {
             w.u16(*off);
             w.u8(*len);
+            w.u8(0);
         }
         for (tok, sc) in &bpool {
-            w.u16(*tok);
-            w.i8(*sc);
+            entry(&mut w, *tok, *sc);
         }
         for (tok, c) in &t.uni {
-            w.u16(*tok);
-            w.i8(if *c > 0 { UNI_SCORE } else { 0 });
+            entry(&mut w, *tok, if *c > 0 { UNI_SCORE } else { 0 });
         }
         w.0
     }
 
-    /// weights.bin: u16 vocab_len, u8 dim, u8 qt_count, u8 sh_dot, u8 sh_b,
-    /// then ctx_emb, cand_emb (vocab*dim i8 each), bias (vocab i8),
-    /// qtype_emb (qt_count*dim i8).
+    /// weights.bin: 8-byte header (u16 vocab_len, u8 dim, u8 qt_count,
+    /// u8 sh_dot, u8 sh_b, u16 pad), then ctx_emb, cand_emb (vocab*dim i8
+    /// each), bias (vocab i8), qtype_emb (qt_count*dim i8). DIM is a
+    /// multiple of 4 so every embedding row stays 4-byte aligned.
     pub fn weights_bin(m: &QuantModel) -> Vec<u8> {
         let mut w = W(Vec::new());
         w.u16(m.vocab_len as u16);
@@ -711,6 +718,7 @@ pub mod pack {
         w.u8(QT_COUNT as u8);
         w.u8(m.sh_dot as u8);
         w.u8(m.sh_b as u8);
+        w.u16(0);
         for e in &m.ctx_emb {
             for d in 0..DIM {
                 w.i8(e[d]);
@@ -792,15 +800,25 @@ pub mod unpack {
         let vocab_len = r.u16() as usize;
         let tri_count = r.u16() as usize;
         let uni_count = r.u16() as usize;
+        let _pad = r.u16();
         let keys: Vec<u32> = (0..tri_count).map(|_| r.u32()).collect();
-        let tri_idx: Vec<(u16, u8)> = (0..tri_count).map(|_| (r.u16(), r.u8())).collect();
+        let idx3 = |r: &mut R| -> (u16, u8) {
+            let v = (r.u16(), r.u8());
+            let _ = r.u8();
+            v
+        };
+        let ent3 = |r: &mut R| -> (u16, i8) {
+            let v = (r.u16(), r.i8());
+            let _ = r.u8();
+            v
+        };
+        let tri_idx: Vec<(u16, u8)> = (0..tri_count).map(|_| idx3(&mut r)).collect();
         let tri_pool_len: usize = tri_idx.iter().map(|(_, l)| *l as usize).sum();
-        let tri_pool: Vec<(u16, i8)> =
-            (0..tri_pool_len).map(|_| (r.u16(), r.i8())).collect();
-        let bi_idx: Vec<(u16, u8)> = (0..vocab_len).map(|_| (r.u16(), r.u8())).collect();
+        let tri_pool: Vec<(u16, i8)> = (0..tri_pool_len).map(|_| ent3(&mut r)).collect();
+        let bi_idx: Vec<(u16, u8)> = (0..vocab_len).map(|_| idx3(&mut r)).collect();
         let bi_pool_len: usize = bi_idx.iter().map(|(_, l)| *l as usize).sum();
-        let bi_pool: Vec<(u16, i8)> = (0..bi_pool_len).map(|_| (r.u16(), r.i8())).collect();
-        let uni: Vec<(u16, i8)> = (0..uni_count).map(|_| (r.u16(), r.i8())).collect();
+        let bi_pool: Vec<(u16, i8)> = (0..bi_pool_len).map(|_| ent3(&mut r)).collect();
+        let uni: Vec<(u16, i8)> = (0..uni_count).map(|_| ent3(&mut r)).collect();
 
         // Reconstruct NgramTables with scores already laddered: store score
         // in the count slot so candidates() reproduces them via *_score?
@@ -869,7 +887,8 @@ pub mod unpack {
         assert_eq!(qt, QT_COUNT, "weights.bin qtype count mismatch");
         let sh_dot = r.u8() as u32;
         let sh_b = r.u8() as u32;
-        let mut emb = |r: &mut R| -> Vec<[i8; DIM]> {
+        let _pad = r.u16();
+        let emb = |r: &mut R| -> Vec<[i8; DIM]> {
             (0..vocab_len)
                 .map(|_| {
                     let mut a = [0i8; DIM];

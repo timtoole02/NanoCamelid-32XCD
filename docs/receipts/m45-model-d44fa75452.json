@@ -1,0 +1,65 @@
+{
+  "milestone": "4+5",
+  "title": "Host trainer + packer + Rust reference runtime",
+  "timestamp_utc": "2026-06-07T00:02:41.360736+00:00",
+  "project_rev": "d44fa75452de3882dc51438602b943cf16dbb566",
+  "corpus_sha256": "ad2ce8bf2f421196ceb4ded46336e575b290e27c11838743ac17fa4a4408ddd7",
+  "model_manifest": {
+    "format_version": 1,
+    "vocab_len": 485,
+    "dim": 16,
+    "ctx": 4,
+    "k": 16,
+    "max_tokens": 32,
+    "sh_dot": 0,
+    "sh_b": 6,
+    "sh_ng": 4,
+    "rep_pen": 192,
+    "corpus_sha256": "ad2ce8bf2f421196ceb4ded46336e575b290e27c11838743ac17fa4a4408ddd7",
+    "quantization": "int8 per-table max-abs, power-of-2 shifts",
+    "files": {
+      "vocab.bin": {
+        "bytes": 2945,
+        "sha256": "d139ad57706ca17d02d54de8335f4dcac849b80317097305ce6af07fe3c9e62f"
+      },
+      "tokenizer.bin": {
+        "bytes": 24,
+        "sha256": "488992ccb52be800d82b5535bb6782eec273553a3ce5987a77229d5d74cfc814"
+      },
+      "candidates.bin": {
+        "bytes": 23260,
+        "sha256": "20de9ef7a48e917198dd95a49be5d857841ec7e3ccd84618369ae7383536b350"
+      },
+      "weights.bin": {
+        "bytes": 16205,
+        "sha256": "b03f25ad379f177410b95de5c0fedeae526775b950ff185165c992125ad5d009"
+      },
+      "decode.bin": {
+        "bytes": 13,
+        "sha256": "963934f1ae4cd6ac72ad38267e5b2e38d12b5c122999d93a3f85b992703bf479"
+      }
+    }
+  },
+  "reference_outputs_sha256": "88fb54135aa93607464ba306f09dba413ca4e7ecfed62ef8e7c2536104905362",
+  "eval_prompts": 121,
+  "checks": {
+    "trainer_deterministic": true,
+    "packer_deterministic": true,
+    "manifest_hashes_valid": true,
+    "manifest_corpus_hash": true,
+    "reference_deterministic": true,
+    "no_blank_outputs": true,
+    "max_len_respected": true,
+    "valid_token_ids": true,
+    "eval_count": true,
+    "verifier_detects_parity": true,
+    "verifier_detects_divergence": true
+  },
+  "pass": true,
+  "honesty_notes": [
+    "Reference runtime is host-side; console parity is Milestone 7.",
+    "Corpus is hand-curated (no synthetic teacher-model data used).",
+    "Topic-bias conditioning deferred to v2; qtype conditioning only.",
+    "Quality is corpus-memorization-with-blending by design; this gate checks structure/determinism, not usefulness."
+  ]
+}
