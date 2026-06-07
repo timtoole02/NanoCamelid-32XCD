@@ -63,6 +63,7 @@ typedef volatile uint32_t vu32;
 #define SH_SLAVE_PART  0x20  /* u32 slave partial sum for current seq */
 #define SH_RESULT      0x28  /* u32 last combined result */
 #define SH_GEN_COUNT   0x30  /* u32 generated-token count (verifier) */
+#define SH_GEN_FALLBACK 0x34 /* u32 fallback level of the last generation */
 #define SH_SCORE_JOBS_M 0x38 /* u32 candidate-slots scored by master */
 #define SH_SCORE_JOBS_S 0x3C /* u32 candidate-slots scored by slave */
 

@@ -57,19 +57,28 @@ def main():
     for i, prompt in enumerate(PROMPTS):
         ridx, entry = by_norm[prompt]
         buf = open(dumps[i], "rb").read()
+        # slot layout: u16 count, u16 fallback, u16 ids[]
         n = int.from_bytes(buf[:2], "big")
-        ids = [int.from_bytes(buf[2 + j * 2:4 + j * 2], "big") for j in range(min(n, 62))]
-        match = ids == entry["output_ids"]
+        fb = int.from_bytes(buf[2:4], "big")
+        ids = [int.from_bytes(buf[4 + j * 2:6 + j * 2], "big") for j in range(min(n, 60))]
+        match = ids == entry["output_ids"] and fb == entry["fallback"]
         checks[f"slot{i}_parity"] = match
         slot_results.append({
             "prompt": prompt, "reference_index": ridx,
             "console_ids": ids, "reference_ids": entry["output_ids"],
+            "console_fallback": fb, "reference_fallback": entry["fallback"],
             "decoded": entry["decoded"], "match": match,
         })
 
-    # canonical parity check through the Rust verifier (slot 0)
+    # canonical parity check through the Rust verifier (slot 0, repacked
+    # into the console.bin format: u16 count + ids)
+    import struct as _struct
+    s0 = slot_results[0]["console_ids"]
+    repack = f"{ROOT}/build/m78_slot0_ids.bin"
+    open(repack, "wb").write(_struct.pack(">H", len(s0))
+                             + b"".join(_struct.pack(">H", t) for t in s0))
     v = subprocess.run([f"{T}/nc-verifier", f"{ROOT}/model/reference_outputs.bin",
-                        str(by_norm[PROMPTS[0]][0]), dumps[0]],
+                        str(by_norm[PROMPTS[0]][0]), repack],
                        capture_output=True, text=True)
     checks["nc_verifier_pass"] = v.returncode == 0 and "PARITY PASS" in v.stdout
 

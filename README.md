@@ -43,7 +43,7 @@ See [docs/claims.md](docs/claims.md) for the full honest-claims statement
 | 7 | First real generated token (parity vs reference) | ✅ done (exact match) |
 | 8 | Multi-token generation, full parity | ✅ done (4 prompts, all token IDs match the reference) |
 | 9 | Parallel streaming inference (CD prefetch during scoring) | — |
-| 10 | Eval gates + receipts | — |
+| 10 | Eval gates + receipts | ✅ done (422 prompts, 100% token+fallback parity, never blank) |
 | 11 | Performance push | — |
 | 12 | Demo mode | — |
 

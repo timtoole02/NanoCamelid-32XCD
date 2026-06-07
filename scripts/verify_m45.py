@@ -18,7 +18,7 @@ T = os.path.join(os.environ.get("CARGO_TARGET_DIR",
                                 "/Volumes/Untitled/cargo-targets/nanocamelid-32XCD"), "release")
 CORPUS = os.path.join(ROOT, "assets", "corpus", "corpus.txt")
 MODEL = os.path.join(ROOT, "model")
-EVAL = os.path.join(ROOT, "docs", "eval", "known_questions.txt")
+EVAL = os.path.join(ROOT, "model", "eval_all.txt")
 
 MIN_TOKENS, MAX_TOKENS = 4, 32
 SPECIALS = {0, 1, 3}  # PAD, UNK, SEP must never be emitted (EOS=2 is stripped)
@@ -69,7 +69,7 @@ def main():
         checks["valid_token_ids"] = all(
             0 <= t < vocab_len and t not in SPECIALS
             for o in ref for t in o["output_ids"])
-        checks["eval_count"] = len(ref) >= 100
+        checks["eval_count"] = len(ref) >= 350
 
         # 6. verifier round-trip: reference vs itself -> PASS; corrupted -> FAIL
         ids = ref[0]["output_ids"]

@@ -4,7 +4,8 @@
 //! reference.bin format (from nc-reference --eval):
 //!   u16 prompt_count, then per prompt:
 //!     u16 prompt_len, prompt_len * u16 ids,
-//!     u16 output_len, output_len * u16 ids        (all big-endian)
+//!     u16 output_len, output_len * u16 ids,
+//!     u16 fallback_level                           (all big-endian)
 //!
 //! console.bin format (the console token buffer dump, memory-map.md):
 //!   u16 count, count * u16 ids                    (big-endian)
@@ -37,7 +38,7 @@ fn main() {
         if i == want_idx {
             ref_ids = (0..olen).map(|j| be16(&refbuf, p + j * 2)).collect();
         }
-        p += olen * 2;
+        p += olen * 2 + 2; /* + fallback word */
     }
 
     let ccount = be16(&conbuf, 0) as usize;

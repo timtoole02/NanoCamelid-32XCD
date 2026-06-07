@@ -8,5 +8,7 @@ T="$CARGO_TARGET_DIR/release"
 cargo build --release --quiet --manifest-path "$ROOT/Cargo.toml"
 "$T/nc-trainer" "$ROOT/assets/corpus/corpus.txt" "$ROOT/model/trained.ncm"
 "$T/nc-packer" "$ROOT/assets/corpus/corpus.txt" "$ROOT/model/trained.ncm" "$ROOT/model"
-"$T/nc-reference" "$ROOT/model" --eval "$ROOT/docs/eval/known_questions.txt" \
+python3 "$ROOT/scripts/mkevalblob.py" "$ROOT/docs/eval" \
+    "$ROOT/model/eval_prompts.blob" "$ROOT/model/eval_all.txt"
+"$T/nc-reference" "$ROOT/model" --eval "$ROOT/model/eval_all.txt" \
     "$ROOT/model/reference_outputs.json" "$ROOT/model/reference_outputs.bin"

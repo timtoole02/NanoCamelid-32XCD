@@ -26,21 +26,22 @@ fn main() {
     let tables = unpack::candidates(&rd("candidates.bin"));
     let model = unpack::weights(&rd("weights.bin"));
 
-    let run = |text: &str| -> (Vec<u16>, Vec<u16>, String, usize) {
+    let run = |text: &str| -> (Vec<u16>, Vec<u16>, String, usize, u8) {
         let (prompt, qt) = prompt_tokens(&vocab, text);
-        let (ids, _traces) = generate_packed(&model, &tables, &prompt, qt);
+        let (ids, _traces, fb) = generate_packed(&model, &tables, &prompt, qt);
         let decoded = detok(&vocab, &ids);
-        (prompt, ids, decoded, qt)
+        (prompt, ids, decoded, qt, fb)
     };
 
     match args[2].as_str() {
         "--prompt" => {
             let text = args.get(3).expect("prompt text");
-            let (prompt, ids, decoded, qt) = run(text);
+            let (prompt, ids, decoded, qt, fb) = run(text);
             println!("normalized: {:?}", normalize(&text.replace(['?', '!'], " ")));
             println!("qtype: {qt}");
             println!("prompt ids: {prompt:?}");
             println!("output ids: {ids:?}");
+            println!("fallback: {fb}");
             println!("decoded: {decoded}");
         }
         "--eval" => {
@@ -54,11 +55,12 @@ fn main() {
                 questions.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
             bin.extend_from_slice(&(qs.len() as u16).to_be_bytes());
             for (i, qtext) in qs.iter().enumerate() {
-                let (prompt, ids, decoded, qt) = run(qtext);
+                let (prompt, ids, decoded, qt, fb) = run(qtext);
                 let norm = normalize(&qtext.replace(['?', '!'], " ")).join(" ");
                 json.push_str(&format!(
                     "    {{ \"input\": \"{}\", \"normalized\": \"{}\", \"qtype\": {qt}, \
-                     \"prompt_ids\": {:?}, \"output_ids\": {:?}, \"decoded\": \"{}\" }}{}\n",
+                     \"fallback\": {fb}, \"prompt_ids\": {:?}, \"output_ids\": {:?}, \
+                     \"decoded\": \"{}\" }}{}\n",
                     esc(qtext), esc(&norm), prompt, ids, esc(&decoded),
                     if i + 1 < qs.len() { "," } else { "" }
                 ));
@@ -70,6 +72,7 @@ fn main() {
                 for t in &ids {
                     bin.extend_from_slice(&t.to_be_bytes());
                 }
+                bin.extend_from_slice(&(fb as u16).to_be_bytes());
             }
             json.push_str("  ]\n}\n");
             std::fs::write(out_json, json).expect("write json");

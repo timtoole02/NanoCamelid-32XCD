@@ -41,6 +41,7 @@
 #define SH2S_SNAP  0xFF600A
 
 #define FONT_ROM   0x008000  /* cart offset 0x8000, visible in the low 64K bank */
+#define ROM68K     0x880000  /* full cart ROM window when the 32X is active */
 #define FONT_TILES 64
 
 #define NAMETBL_A  0xC000
@@ -91,6 +92,7 @@ static uint32_t m2_cmd(uint16_t seed, uint16_t seq)
     COMM(1) = seed;
     COMM(0) = CMD(OP_WORK, seq);
     for (uint32_t t = 0; t < 2000000; t++) {
+        REG32(HB68K)++;
         if (COMM(0) == 0)
             return ((uint32_t)COMM(2) << 16) | COMM(3);
     }
@@ -104,7 +106,7 @@ static uint32_t m2_cmd(uint16_t seed, uint16_t seq)
  * words in id order). Linear scan; returns TOK_UNK when absent. */
 static uint16_t vocab_id(const char *w, int wlen)
 {
-    const uint8_t *v = mdl_dir(0, MDL_DIR_VOCAB, 0);
+    const uint8_t *v = mdl_dir(ROM68K, MDL_DIR_VOCAB, 0);
     uint16_t count = mdl_be16(v);
     const uint8_t *p = v + 2;
     for (uint16_t id = 0; id < count; id++) {
@@ -124,7 +126,7 @@ static uint16_t vocab_id(const char *w, int wlen)
  * returns length. */
 static int vocab_word(uint16_t id, char *buf)
 {
-    const uint8_t *v = mdl_dir(0, MDL_DIR_VOCAB, 0);
+    const uint8_t *v = mdl_dir(ROM68K, MDL_DIR_VOCAB, 0);
     uint16_t count = mdl_be16(v);
     const uint8_t *p = v + 2;
     for (uint16_t i = 0; i < count; i++) {
@@ -146,7 +148,7 @@ static int vocab_word(uint16_t id, char *buf)
  * in QTYPE_WORDS order; index+1 on match, 0 otherwise). */
 static uint16_t qtype_from(uint16_t first_id)
 {
-    const uint8_t *t = mdl_dir(0, MDL_DIR_TOKENIZER, 0);
+    const uint8_t *t = mdl_dir(ROM68K, MDL_DIR_TOKENIZER, 0);
     uint16_t count = mdl_be16(t);
     for (uint16_t i = 0; i < count; i++)
         if (mdl_be16(t + 2 + i * 2) == first_id)
@@ -159,16 +161,19 @@ static int send_cmd(uint16_t op, uint16_t seq, uint16_t arg)
 {
     COMM(1) = arg;
     COMM(0) = CMD(op, seq);
-    for (uint32_t t = 0; t < 2000000; t++)
+    for (uint32_t t = 0; t < 2000000; t++) {
+        REG32(HB68K)++;
         if (COMM(0) == 0)
             return 0;
+    }
     REG16(M7_ERR) = (uint16_t)(0x0100 | op);
     return -1;
 }
 
 /* Tokenize the prompt (lowercase words separated by spaces), stream the
- * ids to the master, start generation, and collect the streamed tokens
- * into the GEN_BUF slot (u16 count + ids). Returns count or -1 on timeout. */
+ * ids to the master, start generation, and collect the streamed tokens.
+ * Result slot layout: u16 count, u16 fallback, u16 ids[<=32].
+ * Returns count or -1 on timeout. */
 static int run_generation(const char *prompt, uint16_t *seq, uint32_t buf)
 {
     uint16_t first_id = 0xFFFF;
@@ -194,14 +199,17 @@ static int run_generation(const char *prompt, uint16_t *seq, uint32_t buf)
     uint16_t n = 0;
     for (uint32_t t = 0; t < 30000000; t++) {
         uint16_t c3 = COMM(3);
+        REG32(HB68K)++;
         if (c3 == 0xFFFF) {
+            uint16_t done = COMM(2); /* MSG_DONE | fallback<<6 | count */
             REG16(buf) = n;
+            REG16(buf + 2) = (uint16_t)((done >> 6) & 3);
             REG16(M7_CNT) = n;
             return n;
         }
         if (c3 == (uint16_t)(n + 1)) {
             uint16_t tok = COMM(2) & 0x0FFF;
-            REG16(buf + 2 + n * 2) = tok;
+            REG16(buf + 4 + n * 2) = tok;
             n++;
             REG16(buf) = n;
             COMM(1) = (uint16_t)(0x4000 | n); /* ACK */
@@ -218,7 +226,7 @@ static void render_answer(uint16_t row, uint32_t buf, int n)
     int col = 0;
     for (int i = 0; i < n; i++) {
         char w[40];
-        int wl = vocab_word(REG16(buf + 2 + i * 2), w);
+        int wl = vocab_word(REG16(buf + 4 + i * 2), w);
         int sep = (col > 0 && !(wl == 1 && (w[0] == ',' || w[0] == '.'))) ? 1 : 0;
         if (col + sep + wl > 40) {
             line[col] = 0;
@@ -310,6 +318,36 @@ __attribute__((section(".text.entry"), noreturn)) void cmain(void)
         render_answer(18, GEN_BUF + 3 * 0x80, n);
     else
         text(18, 0, "GENERATION TIMEOUT");
+
+    /* M10: eval gauntlet — run every prompt from the ROM eval blob (dir
+     * entry 6: u16 count, then per prompt u8 len + normalized text) and
+     * store results at 0xFF8000 (stride 0x44) for the verifier. */
+    {
+        uint32_t blob_size = 0;
+        const uint8_t *blob = mdl_dir(ROM68K, 6, &blob_size);
+        if (blob_size > 2) {
+            uint16_t total = mdl_be16(blob);
+            const uint8_t *p = blob + 2;
+            REG16(0xFF605A) = total;
+            text(21, 0, "EVAL");
+            for (uint16_t i = 0; i < total; i++) {
+                char qbuf[64];
+                uint8_t len = *p++;
+                for (uint8_t j = 0; j < len && j < 63; j++)
+                    qbuf[j] = (char)p[j];
+                qbuf[len < 63 ? len : 63] = 0;
+                p += len;
+                run_generation(qbuf, &cmd_seq, 0xFF8000 + (uint32_t)i * 0x44);
+                REG16(0xFF6058) = i + 1;
+                if ((i & 15) == 0 || i + 1 == total) {
+                    hex(21, 5, i + 1, 4);
+                    text(21, 9, "/");
+                    hex(21, 10, total, 4);
+                }
+            }
+            text(21, 15, "DONE");
+        }
+    }
 
     for (;;) {
         wait_vblank();

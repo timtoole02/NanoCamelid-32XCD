@@ -13,7 +13,7 @@ static int push_unique(Cand *out, int n, uint16_t tok, int8_t sc)
     return n + 1;
 }
 
-int infer_candidates(const Model *m, uint16_t w1, uint16_t w2, Cand *out)
+int infer_candidates(const Model *m, uint16_t w1, uint16_t w2, Cand *out, uint8_t *tier)
 {
     int n = 0;
     uint32_t key = ((uint32_t)w1 << 16) | w2;
@@ -53,6 +53,7 @@ int infer_candidates(const Model *m, uint16_t w1, uint16_t w2, Cand *out)
         uint8_t len = idx[2];
         const uint8_t *e = m->bi_pool + (uint32_t)off * 4;
         int i;
+        *tier = (found >= 0) ? 0 : (len > 0 ? 1 : 2);
         for (i = 0; i < len && i < MDL_BI_TOP; i++, e += 4)
             n = push_unique(out, n, mdl_be16(e), (int8_t)e[2]);
     }

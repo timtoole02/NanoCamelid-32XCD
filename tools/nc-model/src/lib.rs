@@ -913,11 +913,15 @@ pub mod unpack {
 }
 
 /// Greedy decode over PACKED tables (final scores; the reference path).
+/// Returns (token ids, traces, fallback level). Fallback level is the max
+/// over steps of: 0 = trigram context hit, 1 = bigram backoff only,
+/// 2 = unigram-only, 3 = all candidates forbidden (uni[0] emergency pick).
 pub fn generate_packed(m: &QuantModel, t: &NgramTables, prompt: &[u16], qt: usize)
-                       -> (Vec<u16>, Vec<StepTrace>) {
+                       -> (Vec<u16>, Vec<StepTrace>, u8) {
     let mut seq: Vec<u16> = prompt.to_vec();
     let mut out = Vec::new();
     let mut traces = Vec::new();
+    let mut fallback = 0u8;
     for _ in 0..MAX_TOKENS {
         let n = seq.len();
         let w2 = seq[n - 1];
@@ -928,6 +932,13 @@ pub fn generate_packed(m: &QuantModel, t: &NgramTables, prompt: &[u16], qt: usiz
                 ctx[j] = seq[n - (CTX - j)];
             }
         }
+        let tier: u8 = if t.tri.binary_search_by_key(&tri_key(w1, w2), |(k, _)| *k).is_ok() {
+            0
+        } else if t.bi.get(w2 as usize).map_or(false, |v| !v.is_empty()) {
+            1
+        } else {
+            2
+        };
         let cands = unpack::candidates_packed(t, w1, w2);
         let cv = context_vector(m, &ctx, qt);
         let mut best = 0usize;
@@ -941,11 +952,14 @@ pub fn generate_packed(m: &QuantModel, t: &NgramTables, prompt: &[u16], qt: usiz
                 best = i;
             }
         }
-        let chosen = if best_s == SCORE_MIN {
-            t.uni.first().map_or(UNK, |(tok, _)| *tok)
+        let (chosen, step_tier) = if best_s == SCORE_MIN {
+            (t.uni.first().map_or(UNK, |(tok, _)| *tok), 3u8)
         } else {
-            cands[best].0
+            (cands[best].0, tier)
         };
+        if step_tier > fallback {
+            fallback = step_tier;
+        }
         traces.push(StepTrace { ctx, cands, scores, chosen });
         if chosen == EOS {
             break;
@@ -953,5 +967,5 @@ pub fn generate_packed(m: &QuantModel, t: &NgramTables, prompt: &[u16], qt: usiz
         out.push(chosen);
         seq.push(chosen);
     }
-    (out, traces)
+    (out, traces, fallback)
 }

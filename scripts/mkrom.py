@@ -16,6 +16,7 @@ Layout (PicoDrive 32X HLE boot contract + model directory):
   0x09900          decode.bin
   0x10000          candidates.bin (4-aligned, SH-2 only)
   next 4-aligned   weights.bin
+  next 4-aligned   eval prompt blob (dir entry 6; 68K reads via 0x880000+)
 ROM is padded to 256K.
 
 Usage: mkrom.py SHELL MASTER SLAVE MAIN68K FONT MODELDIR OUT.32x
@@ -45,6 +46,10 @@ def main():
     decode = rd(f"{modeldir}/decode.bin")
     candidates = rd(f"{modeldir}/candidates.bin")
     weights = rd(f"{modeldir}/weights.bin")
+    try:
+        evalblob = rd(f"{modeldir}/eval_prompts.blob")
+    except FileNotFoundError:
+        evalblob = b""
 
     assert len(shell) <= DIR_OFF, f"68K shell overlaps directory: {len(shell):#x}"
     assert len(master) <= MASTER_MAX, f"master SH-2 too big: {len(master):#x}"
@@ -56,13 +61,15 @@ def main():
     assert len(decode) <= CAND_OFF - DECODE_OFF
 
     weights_off = (CAND_OFF + len(candidates) + 3) & ~3
-    assert weights_off + len(weights) <= ROM_SIZE, "ROM overflow"
+    eval_off = (weights_off + len(weights) + 3) & ~3
+    assert eval_off + len(evalblob) <= ROM_SIZE, "ROM overflow"
 
     rom = bytearray(ROM_SIZE)
     for off, data in [(0, shell), (MASTER_OFF, master), (SLAVE_OFF, slave),
                       (MAIN_OFF, main68k), (FONT_OFF, font), (VOCAB_OFF, vocab),
                       (TOKENIZER_OFF, tokenizer), (DECODE_OFF, decode),
-                      (CAND_OFF, candidates), (weights_off, weights)]:
+                      (CAND_OFF, candidates), (weights_off, weights),
+                      (eval_off, evalblob)]:
         rom[off:off + len(data)] = data
 
     def patch32(off, val):
@@ -81,7 +88,7 @@ def main():
     entries = [(VOCAB_OFF, len(vocab)), (TOKENIZER_OFF, len(tokenizer)),
                (CAND_OFF, len(candidates)), (weights_off, len(weights)),
                (DECODE_OFF, len(decode)), (FONT_OFF, len(font)),
-               (0, 0), (0, 0)]
+               (eval_off if evalblob else 0, len(evalblob)), (0, 0)]
     for i, (off, size) in enumerate(entries):
         patch32(DIR_OFF + i * 8, off)
         patch32(DIR_OFF + i * 8 + 4, size)

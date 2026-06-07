@@ -34,6 +34,7 @@ static void generate(const Model *m, uint16_t *seq, int seq_len, int qt)
     uint16_t out[MDL_MAX_TOKENS];
     int out_len = 0;
     uint16_t gen_seq = 0;
+    uint8_t fallback = 0;
     int step;
 
     for (step = 0; step < MDL_MAX_TOKENS; step++) {
@@ -42,12 +43,13 @@ static void generate(const Model *m, uint16_t *seq, int seq_len, int qt)
         uint16_t ctx[MDL_CTX];
         Cand cands[MDL_K];
         int32_t cv[MDL_DIM];
+        uint8_t tier;
         int n, j, i;
 
         for (j = 0; j < MDL_CTX; j++)
             ctx[j] = (seq_len >= MDL_CTX - j) ? seq[seq_len - (MDL_CTX - j)] : TOK_PAD;
 
-        n = infer_candidates(m, w1, w2, cands);
+        n = infer_candidates(m, w1, w2, cands, &tier);
         infer_context_vector(m, ctx, qt, cv);
 
         /* publish the scoring workspace for the slave */
@@ -95,7 +97,14 @@ static void generate(const Model *m, uint16_t *seq, int seq_len, int qt)
                     best = sslot;
                 }
             }
-            chosen = (best_s == MDL_SCORE_MIN) ? mdl_be16(m->uni) : cands[best].tok;
+            if (best_s == MDL_SCORE_MIN) {
+                chosen = mdl_be16(m->uni);
+                tier = 3;
+            } else {
+                chosen = cands[best].tok;
+            }
+            if (tier > fallback)
+                fallback = tier;
 
             if (chosen == TOK_EOS)
                 break;
@@ -111,7 +120,9 @@ static void generate(const Model *m, uint16_t *seq, int seq_len, int qt)
         }
     }
 
-    COMM(2) = (uint16_t)(MSG_DONE | out_len);
+    /* done marker: 0xB000 | fallback<<6 | count (count <= 32 fits 6 bits) */
+    SHARED(SH_GEN_FALLBACK) = fallback;
+    COMM(2) = (uint16_t)(MSG_DONE | ((uint16_t)fallback << 6) | out_len);
     COMM(3) = 0xFFFF;
 }
 

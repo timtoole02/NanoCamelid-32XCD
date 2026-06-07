@@ -9,3 +9,5 @@ target/
 *.dylib
 .DS_Store
 model/*.ncm
+model/*.blob
+model/eval_all.txt

@@ -11,8 +11,9 @@ typedef struct {
 } Cand;
 
 /* Candidate merge for context (w1, w2): trigram top-8, bigram top-8
- * deduped, unigram fill; returns count (<= MDL_K). */
-int infer_candidates(const Model *m, uint16_t w1, uint16_t w2, Cand *out);
+ * deduped, unigram fill; returns count (<= MDL_K). *tier reports the
+ * backoff level: 0 = trigram hit, 1 = bigram only, 2 = unigram only. */
+int infer_candidates(const Model *m, uint16_t w1, uint16_t w2, Cand *out, uint8_t *tier);
 
 /* cv[DIM] from the last CTX tokens (PAD-padded, most recent last) + qtype. */
 void infer_context_vector(const Model *m, const uint16_t ctx[MDL_CTX], int qt,
