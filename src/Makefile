@@ -5,8 +5,9 @@ M68K_PREFIX ?= m68k-elf-
 BUILD := ../build
 
 ROM := $(BUILD)/nanocamelid32x.32x
+DEMOROM := $(BUILD)/nanocamelid32x_demo.32x
 
-all: $(ROM)
+all: $(ROM) $(DEMOROM)
 
 $(BUILD)/genesis68k_boot.bin: genesis68k/boot.s
 	@mkdir -p $(BUILD)
@@ -56,6 +57,10 @@ $(ROM): $(BUILD)/genesis68k_boot.bin $(BUILD)/sh2_master.bin $(BUILD)/sh2_slave.
         $(MODELDIR)/candidates.bin $(MODELDIR)/weights.bin $(MODELDIR)/vocab.bin
 	python3 ../scripts/mkrom.py $(BUILD)/genesis68k_boot.bin $(BUILD)/sh2_master.bin \
 	    $(BUILD)/sh2_slave.bin $(BUILD)/genesis68k_main.bin $(BUILD)/font.bin $(MODELDIR) $@
+
+$(DEMOROM): $(ROM)
+	python3 ../scripts/mkrom.py $(BUILD)/genesis68k_boot.bin $(BUILD)/sh2_master.bin \
+	    $(BUILD)/sh2_slave.bin $(BUILD)/genesis68k_main.bin $(BUILD)/font.bin $(MODELDIR) $@ noeval
 
 clean:
 	rm -f $(BUILD)/genesis68k_*.* $(BUILD)/sh2_master.* $(BUILD)/sh2_slave.* $(BUILD)/font.bin $(ROM)

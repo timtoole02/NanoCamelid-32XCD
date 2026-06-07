@@ -15,7 +15,7 @@
 #include "../shared/mailbox.h"
 #include "../shared/infer.h"
 
-#define ROM_BASE 0x22000000u
+#define ROM_BASE 0x02000000u  /* cached ROM mirror: read-only data, coherency-safe */
 
 #define SEQ_MAX (24 + MDL_MAX_TOKENS)
 

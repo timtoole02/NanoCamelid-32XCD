@@ -1,0 +1,38 @@
+{
+  "milestone": 11,
+  "title": "Performance measurement (emulated time)",
+  "timestamp_utc": "2026-06-07T00:20:19.684666+00:00",
+  "project_rev": "d36954755ca6d3ddc6e6a2a8c1a917ce3ba8bb3d",
+  "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
+  "rom_sha256": "58cd52a9d98318d4d31df2db015ce3f7e28225afbb8757a38beebc8e90c84020",
+  "config": {
+    "vocab": 489,
+    "dim": 16,
+    "K": 16,
+    "ctx": 4,
+    "model_packed_bytes": "~38K",
+    "sh2_code": "cached ROM mirror (0x02000000)"
+  },
+  "measured": {
+    "prompts": 422,
+    "tokens": 5090,
+    "gauntlet_frames": 285,
+    "tokens_per_sec_emulated": 1071.6,
+    "frames_per_token": 0.056,
+    "sh2_master_slots_scored": 44360,
+    "sh2_slave_slots_scored": 44360,
+    "slave_share": 0.5
+  },
+  "checks": {
+    "gauntlet_completed": true,
+    "throughput_over_100_tps": true,
+    "interactive_feel": true,
+    "slave_share_meaningful": true
+  },
+  "pass": true,
+  "honesty_notes": [
+    "Emulated-time numbers: PicoDrive does not model cached-vs-uncached SH-2 access or bus contention; real hardware would be slower and the cached-ROM configuration matters there.",
+    "Larger model configs (vocab 1024 / dim 32 / K 32) not exercised: the corpus yields 489 words; config sweep deferred until the corpus grows.",
+    "Steps with <=8 candidates score on the master only; the slave share reflects that."
+  ]
+}

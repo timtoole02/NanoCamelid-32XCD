@@ -1,0 +1,91 @@
+{
+  "milestone": 10,
+  "title": "Eval gauntlet: 422 prompts, full console-vs-reference parity",
+  "timestamp_utc": "2026-06-07T00:20:18.377638+00:00",
+  "project_rev": "d36954755ca6d3ddc6e6a2a8c1a917ce3ba8bb3d",
+  "emulator": "PicoDrive (libretro, local build w/ memory-access patch)",
+  "rom_sha256": "58cd52a9d98318d4d31df2db015ce3f7e28225afbb8757a38beebc8e90c84020",
+  "corpus_sha256": "ad2ce8bf2f421196ceb4ded46336e575b290e27c11838743ac17fa4a4408ddd7",
+  "tokenizer_sha256": "488992ccb52be800d82b5535bb6782eec273553a3ce5987a77229d5d74cfc814",
+  "candidate_table_sha256": "20de9ef7a48e917198dd95a49be5d857841ec7e3ccd84618369ae7383536b350",
+  "neural_weights_sha256": "b03f25ad379f177410b95de5c0fedeae526775b950ff185165c992125ad5d009",
+  "model_manifest_files": {
+    "vocab.bin": {
+      "bytes": 2945,
+      "sha256": "d139ad57706ca17d02d54de8335f4dcac849b80317097305ce6af07fe3c9e62f"
+    },
+    "tokenizer.bin": {
+      "bytes": 24,
+      "sha256": "488992ccb52be800d82b5535bb6782eec273553a3ce5987a77229d5d74cfc814"
+    },
+    "candidates.bin": {
+      "bytes": 23260,
+      "sha256": "20de9ef7a48e917198dd95a49be5d857841ec7e3ccd84618369ae7383536b350"
+    },
+    "weights.bin": {
+      "bytes": 16205,
+      "sha256": "b03f25ad379f177410b95de5c0fedeae526775b950ff185165c992125ad5d009"
+    },
+    "decode.bin": {
+      "bytes": 13,
+      "sha256": "963934f1ae4cd6ac72ad38267e5b2e38d12b5c122999d93a3f85b992703bf479"
+    }
+  },
+  "reference_outputs_sha256": "9b1f632491f342fbbc6fd5329dfdc7acb2faf5f629cb9599f1e580669643f454",
+  "scoring_mode": "split 8/8 across master+slave SH-2 (master-only when <=8 candidates)",
+  "quantization_mode": "int8 per-table max-abs, power-of-2 shifts",
+  "prompts_total": 422,
+  "per_set": [
+    {
+      "set": "known_questions",
+      "prompts": 121,
+      "pass": 121
+    },
+    {
+      "set": "paraphrases",
+      "prompts": 101,
+      "pass": 101
+    },
+    {
+      "set": "random_questions",
+      "prompts": 100,
+      "pass": 100
+    },
+    {
+      "set": "nonsense",
+      "prompts": 50,
+      "pass": 50
+    },
+    {
+      "set": "technical_questions",
+      "prompts": 50,
+      "pass": 50
+    }
+  ],
+  "fallback_histogram": {
+    "0": 200,
+    "1": 222,
+    "2": 0,
+    "3": 0
+  },
+  "processor_role_counters": {
+    "sh2_master_slots_scored": 44360,
+    "sh2_slave_slots_scored": 44360
+  },
+  "checks": {
+    "all_prompts_completed": true,
+    "no_hang_no_error": true,
+    "no_blank_responses": true,
+    "max_len_respected": true,
+    "valid_token_ids_only": true,
+    "token_parity_all": true,
+    "fallback_parity_all": true,
+    "both_sh2_scored": true
+  },
+  "pass": true,
+  "honesty_notes": [
+    "CD image gate not applicable yet: model is cart-ROM-resident (M3/M9 blocked on user-supplied Sega CD BIOS); rom_sha256 stands in for cd_image_sha256.",
+    "Emulator-only.",
+    "Eval prompts hand-curated alongside the corpus; no synthetic teacher-model data anywhere."
+  ]
+}

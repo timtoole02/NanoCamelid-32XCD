@@ -220,6 +220,161 @@ static int run_generation(const char *prompt, uint16_t *seq, uint32_t buf)
 }
 
 /* Render generated ids as text across rows (40-col wrap). */
+static void render_answer(uint16_t row, uint32_t buf, int n);
+
+/* ---- M12: interactive demo (controller + on-screen keyboard) --------- */
+
+#define PAD_DATA   0xA10003
+#define PAD_CTRL   0xA10009
+#define PB_U 0x01
+#define PB_D 0x02
+#define PB_L 0x04
+#define PB_R 0x08
+#define PB_A 0x10
+#define PB_B 0x20
+#define PB_C 0x40
+#define PB_S 0x80
+
+#define D_CURSOR   0xFF6062  /* (unused; cursor lives in registers) */
+#define D_INLEN    0xFF6064  /* u16 input length */
+#define D_PADPREV  0xFF6066  /* u16 previous pad state */
+#define D_INBUF    0xFF6070  /* char[40] typed input (uppercase) */
+
+#define REG8(a)    (*(volatile uint8_t *)(a))
+
+static uint16_t pad_read(void)
+{
+    uint16_t m = 0;
+    REG8(PAD_CTRL) = 0x40;
+    REG8(PAD_DATA) = 0x40;
+    __asm__ volatile("nop\n\tnop\n\tnop\n\tnop");
+    uint8_t th1 = REG8(PAD_DATA);
+    REG8(PAD_DATA) = 0x00;
+    __asm__ volatile("nop\n\tnop\n\tnop\n\tnop");
+    uint8_t th0 = REG8(PAD_DATA);
+    REG8(PAD_DATA) = 0x40;
+    if (!(th1 & 0x01)) m |= PB_U;
+    if (!(th1 & 0x02)) m |= PB_D;
+    if (!(th1 & 0x04)) m |= PB_L;
+    if (!(th1 & 0x08)) m |= PB_R;
+    if (!(th1 & 0x10)) m |= PB_B;
+    if (!(th1 & 0x20)) m |= PB_C;
+    if (!(th0 & 0x10)) m |= PB_A;
+    if (!(th0 & 0x20)) m |= PB_S;
+    return m;
+}
+
+#define KB_COLS 13
+#define KB_ROWS 3
+#define KB_TOP  6
+#define KB_LEFT 7
+
+static char key_char(int kx, int ky)
+{
+    int idx = ky * KB_COLS + kx;
+    if (idx < 26) return (char)('A' + idx);
+    if (idx < 36) return (char)('0' + idx - 26);
+    if (idx == 36) return '\'';
+    if (idx == 37) return '_';  /* space */
+    return '<';                 /* backspace */
+}
+
+static void draw_keyboard(int sel_x, int sel_y)
+{
+    for (int ky = 0; ky < KB_ROWS; ky++) {
+        vdp_addr(VRAM_W(NAMETBL_A + ((KB_TOP + ky * 2) * PLANE_W + KB_LEFT) * 2));
+        for (int kx = 0; kx < KB_COLS; kx++) {
+            uint16_t tile = (uint16_t)(key_char(kx, ky) - 32);
+            if (kx == sel_x && ky == sel_y)
+                tile |= 0x2000; /* palette line 1: highlight */
+            REG16(VDP_DATA) = tile;
+            REG16(VDP_DATA) = 0; /* spacing */
+        }
+    }
+}
+
+static void draw_input(void)
+{
+    uint16_t len = REG16(D_INLEN);
+    char line[37];
+    int i;
+    for (i = 0; i < len && i < 34; i++)
+        line[i] = (char)REG8(D_INBUF + i);
+    line[i] = '<'; /* caret */
+    for (i++; i < 35; i++)
+        line[i] = ' '; /* erase stale tail */
+    line[35] = 0;
+    text(3, 5, line);
+}
+
+__attribute__((noreturn)) static void demo_loop(uint16_t *cmd_seq)
+{
+    uint16_t kx = 0, ky = 0;
+    REG16(D_PADPREV) = 0;
+    REG16(D_INLEN) = 0;
+    for (;;) {
+        wait_vblank();
+        REG32(HB68K)++;
+        REG16(SH2M_SNAP) = REG16(COMM6);
+        REG16(SH2S_SNAP) = REG16(COMM7);
+        hex(24, 27, REG16(COMM6), 4);
+        hex(24, 35, REG16(COMM7), 4);
+
+        uint16_t pad = pad_read();
+        uint16_t hit = pad & ~REG16(D_PADPREV);
+        REG16(D_PADPREV) = pad;
+
+        if (hit & PB_L) kx = kx ? kx - 1 : KB_COLS - 1;
+        if (hit & PB_R) kx = (uint16_t)(kx + 1 < KB_COLS ? kx + 1 : 0);
+        if (hit & PB_U) ky = ky ? ky - 1 : KB_ROWS - 1;
+        if (hit & PB_D) ky = (uint16_t)(ky + 1 < KB_ROWS ? ky + 1 : 0);
+
+        uint16_t len = REG16(D_INLEN);
+        if (hit & PB_A) {
+            char c = key_char(kx, ky);
+            if (c == '<') {
+                if (len) REG16(D_INLEN) = --len;
+            } else if (len < 34) {
+                REG8(D_INBUF + len) = (uint8_t)(c == '_' ? ' ' : c);
+                REG16(D_INLEN) = ++len;
+            }
+        }
+        if ((hit & PB_B) && len)
+            REG16(D_INLEN) = --len;
+        if ((hit & PB_C) && len < 34) {
+            REG8(D_INBUF + len) = ' ';
+            REG16(D_INLEN) = ++len;
+        }
+
+        if ((hit & PB_S) && len) {
+            char q[36];
+            for (uint16_t i = 0; i < len; i++) {
+                char c = (char)REG8(D_INBUF + i);
+                q[i] = (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c;
+            }
+            q[len] = 0;
+            text(13, 4, "THINKING...        ");
+            for (uint16_t r = 15; r < 19; r++)
+                text(r, 0, "                                        ");
+            int n = run_generation(q, cmd_seq, GEN_BUF);
+            text(13, 4, "PRESS START TO ASK ");
+            if (n > 0) {
+                render_answer(15, GEN_BUF, n);
+                text(20, 4, "TOKENS");
+                hex(20, 11, (uint16_t)n, 2);
+                text(20, 15, "FALLBACK");
+                hex(20, 24, REG16(GEN_BUF + 2), 1);
+            } else {
+                text(15, 0, "GENERATION TIMEOUT");
+            }
+            REG16(D_INLEN) = 0;
+        }
+
+        draw_keyboard(kx, ky);
+        draw_input();
+    }
+}
+
 static void render_answer(uint16_t row, uint32_t buf, int n)
 {
     char line[41];
@@ -280,6 +435,25 @@ __attribute__((section(".text.entry"), noreturn)) void cmain(void)
     const uint16_t *font = (const uint16_t *)FONT_ROM;
     for (uint32_t i = 0; i < FONT_TILES * 32 / 2; i++)
         REG16(VDP_DATA) = font[i];
+
+    /* palette 1, color 1: green key highlight for the demo keyboard */
+    vdp_addr(CRAM_W(0x22));
+    REG16(VDP_DATA) = 0x00E0;
+
+    /* demo build (no eval blob in ROM): interactive chat UI */
+    {
+        uint32_t blob_size = 0;
+        mdl_dir(ROM68K, 6, &blob_size);
+        if (blob_size <= 2) {
+            uint16_t cmd_seq = 1;
+            text(1, 11, "NANOCAMELID 32XCD");
+            text(3, 0, "ASK:");
+            text(13, 4, "PRESS START TO ASK ");
+            text(22, 2, "DPAD MOVE  A TYPE  B DEL  C SPACE");
+            text(24, 0, "TINY TRAINED LM - EMULATOR - SH2");
+            demo_loop(&cmd_seq); /* never returns */
+        }
+    }
 
     text(2, 11, "NANOCAMELID 32XCD");
     text(4, 8, "TINY LM INFERENCE ENGINE");

@@ -44,8 +44,12 @@ Anything that could mislead gets recorded here as it happens:
 
 - **Emulator-only** (PicoDrive). No real-hardware verification yet.
 - **Sega CD BIOS** is required and user-supplied; the boot path depends on it.
-- If synthetic training data from a teacher model is used in the corpus, it
-  will be listed here with details. *(Status: not yet decided.)*
+- No synthetic teacher-model data: corpus and eval sets are hand-curated.
+- Performance numbers are EMULATED time (PicoDrive does not model
+  cached-vs-uncached SH-2 access or bus contention); real hardware would
+  be slower.
+- Model is currently cart-ROM-resident; CD shard streaming (M3/M9) is
+  blocked on a user-supplied Sega CD BIOS and every receipt says so.
 - The Sega CD Sub 68000 **streams and decompresses model data**; it does not
   perform scoring math. Processor role counters in receipts show exactly what
   each CPU did.

@@ -44,8 +44,8 @@ See [docs/claims.md](docs/claims.md) for the full honest-claims statement
 | 8 | Multi-token generation, full parity | ✅ done (4 prompts, all token IDs match the reference) |
 | 9 | Parallel streaming inference (CD prefetch during scoring) | — |
 | 10 | Eval gates + receipts | ✅ done (422 prompts, 100% token+fallback parity, never blank) |
-| 11 | Performance push | — |
-| 12 | Demo mode | — |
+| 11 | Performance push | ✅ measured: ~1070 tok/s emulated, 0.056 frames/token, slave at 50% of split slots |
+| 12 | Demo mode | ✅ done (controller-typed prompts, on-screen keyboard, live answers + stats) |
 
 ## Building
 

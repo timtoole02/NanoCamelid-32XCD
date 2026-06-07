@@ -19,7 +19,8 @@ Layout (PicoDrive 32X HLE boot contract + model directory):
   next 4-aligned   eval prompt blob (dir entry 6; 68K reads via 0x880000+)
 ROM is padded to 256K.
 
-Usage: mkrom.py SHELL MASTER SLAVE MAIN68K FONT MODELDIR OUT.32x
+Usage: mkrom.py SHELL MASTER SLAVE MAIN68K FONT MODELDIR OUT.32x [noeval]
+  noeval: omit the eval blob -> the 68K boots the interactive demo UI.
 """
 import struct
 import sys
@@ -46,8 +47,9 @@ def main():
     decode = rd(f"{modeldir}/decode.bin")
     candidates = rd(f"{modeldir}/candidates.bin")
     weights = rd(f"{modeldir}/weights.bin")
+    noeval = len(sys.argv) > 8 and sys.argv[8] == "noeval"
     try:
-        evalblob = rd(f"{modeldir}/eval_prompts.blob")
+        evalblob = b"" if noeval else rd(f"{modeldir}/eval_prompts.blob")
     except FileNotFoundError:
         evalblob = b""
 
@@ -79,8 +81,8 @@ def main():
     patch32(0x3D4, 0x000400)                 # IDL src (unused)
     patch32(0x3D8, 0x000000)                 # IDL dst
     patch32(0x3DC, 0)                        # IDL size: none
-    patch32(0x3E0, 0x22000000 | MASTER_OFF)  # master entry (uncached ROM)
-    patch32(0x3E4, 0x22000000 | SLAVE_OFF)   # slave entry
+    patch32(0x3E0, 0x02000000 | MASTER_OFF)  # master entry (cached ROM)
+    patch32(0x3E4, 0x02000000 | SLAVE_OFF)   # slave entry (cached)
     patch32(0x3E8, 0)                        # master VBR -> HLE trap table
     patch32(0x3EC, 0)                        # slave VBR
 

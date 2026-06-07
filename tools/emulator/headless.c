@@ -14,6 +14,8 @@
  *     [--sample NAME:REGION:OFF:SIZE]...    (per-frame u8/u16/u32/u64 LE sample)
  *     [--dump REGION:OFF:SIZE:FILE]...      (binary dump after last frame)
  *     [--screenshot FILE.ppm]               (last frame, RGB565/XRGB8888)
+ *     [--press FRAME:MASK]...               (joypad 1 buttons held that frame;
+ *                                            mask bits = RETRO_DEVICE_ID_JOYPAD_*)
  *     [--quiet]
  */
 #include <stdio.h>
@@ -26,6 +28,7 @@
 
 #define MAX_SAMPLES 16
 #define MAX_DUMPS   16
+#define MAX_PRESSES 4096
 #define MAX_FRAMES  (60*60*30) /* 30 min cap: no unbounded runs */
 
 typedef struct { char name[32]; unsigned region; uint32_t off, size; uint64_t *values; } sample_t;
@@ -89,9 +92,18 @@ static void video_cb(const void *data, unsigned w, unsigned h, size_t pitch) {
 }
 static void audio_cb(int16_t l, int16_t r) { (void)l; (void)r; }
 static size_t audio_batch_cb(const int16_t *d, size_t frames) { (void)d; return frames; }
+/* scripted input: buttons held on joypad 1 for the current frame */
+static uint32_t press_frames[MAX_PRESSES];
+static uint32_t press_masks[MAX_PRESSES];
+static int n_presses;
+static uint32_t cur_frame, cur_mask;
+
 static void input_poll_cb(void) {}
 static int16_t input_state_cb(unsigned port, unsigned dev, unsigned idx, unsigned id) {
-    (void)port; (void)dev; (void)idx; (void)id; return 0;
+    (void)idx;
+    if (port != 0 || dev != RETRO_DEVICE_JOYPAD || id > 15)
+        return 0;
+    return (cur_mask >> id) & 1;
 }
 
 #define SYM(field, name) do { \
@@ -161,6 +173,12 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--bios-dir") && i + 1 < argc)
             snprintf(bios_dir, sizeof bios_dir, "%s", argv[++i]);
         else if (!strcmp(argv[i], "--screenshot") && i + 1 < argc) shot_path = argv[++i];
+        else if (!strcmp(argv[i], "--press") && i + 1 < argc && n_presses < MAX_PRESSES) {
+            if (sscanf(argv[++i], "%u:%u", &press_frames[n_presses],
+                       &press_masks[n_presses]) != 2)
+                { fprintf(stderr, "bad --press %s\n", argv[i]); return 2; }
+            n_presses++;
+        }
         else if (!strcmp(argv[i], "--quiet")) quiet = 1;
         else if (!strcmp(argv[i], "--sample") && i + 1 < argc && n_samples < MAX_SAMPLES) {
             char region[32];
@@ -222,6 +240,11 @@ int main(int argc, char **argv) {
     }
 
     for (long f = 0; f < frames; f++) {
+        cur_frame = (uint32_t)f;
+        cur_mask = 0;
+        for (int i = 0; i < n_presses; i++)
+            if (press_frames[i] == cur_frame)
+                cur_mask |= press_masks[i];
         core.run();
         for (int i = 0; i < n_samples; i++) {
             const uint8_t *base = core.get_memory_data(samples[i].region);

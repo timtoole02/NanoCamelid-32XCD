@@ -1,0 +1,55 @@
+{
+  "milestone": 12,
+  "title": "Interactive demo: controller-typed prompt, live inference, rendered answer",
+  "timestamp_utc": "2026-06-07T00:20:20.168646+00:00",
+  "project_rev": "d36954755ca6d3ddc6e6a2a8c1a917ce3ba8bb3d",
+  "emulator": "PicoDrive (libretro, local build w/ memory-access patch + scripted input)",
+  "demo_rom_sha256": "47fb006feea7f8c546ce2d1707a4a7d1e7bbfc0ae9fbfe111e75cee2bddeb1df",
+  "typed": "HI",
+  "console_ids": [
+    94,
+    120,
+    8,
+    4,
+    21,
+    5,
+    4,
+    47,
+    11,
+    109,
+    5,
+    4,
+    21,
+    5
+  ],
+  "reference_ids": [
+    94,
+    120,
+    8,
+    4,
+    21,
+    5,
+    4,
+    47,
+    11,
+    109,
+    5,
+    4,
+    21,
+    5
+  ],
+  "decoded": "hello friend, the disc. the best word wins. the disc.",
+  "rendered_rows": "HELLO FRIEND, THE DISC. THE BEST WORD WINS. THE DISC.",
+  "checks": {
+    "typed_prompt_generated": true,
+    "ids_match_reference": true,
+    "fallback_matches": true,
+    "answer_rendered": true,
+    "stats_line_updated": true
+  },
+  "pass": true,
+  "honesty_notes": [
+    "Input was scripted through the headless harness (--press); the same UI works with a human on a real pad in any libretro frontend.",
+    "Emulator-only. Model cart-resident (CD streaming blocked on BIOS)."
+  ]
+}
